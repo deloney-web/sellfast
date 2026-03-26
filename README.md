@@ -2,7 +2,7 @@
 
 A modern, multi-tenant platform for creating and managing digital product shops with built-in authentication, API access, analytics, and customer support.
 
-This is still a prototype, not for production use.
+This is still a prototype, not for ACTUAL use!!
 ## Features
 
 - **Multi-Tenant Architecture**: Each user can create multiple shops with unique subdomains
