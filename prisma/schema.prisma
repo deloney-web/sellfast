@@ -1,0 +1,180 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  shops        Shop[]
+  sessions     Session[]
+}
+
+model Session {
+  id           String    @id @default(cuid())
+  userId       String
+  token        String    @unique
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+  
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([token])
+}
+
+model Shop {
+  id          String    @id @default(cuid())
+  ownerId     String
+  name        String
+  subdomain   String    @unique
+  description String?
+  logoUrl     String?
+  settings    String    @default("{}")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  owner       User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  apiKeys     ApiKey[]
+  products    Product[]
+  customers   Customer[]
+  tickets     Ticket[]
+  purchases   Purchase[]
+  analytics   AnalyticsEvent[]
+  
+  @@index([ownerId])
+  @@index([subdomain])
+}
+
+model ApiKey {
+  id           String    @id @default(cuid())
+  shopId       String
+  name         String
+  hashedKey    String    @unique
+  permissions  String    @default("{}")
+  lastUsedAt   DateTime?
+  lastRotated  DateTime  @default(now())
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  shop         Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  
+  @@index([shopId])
+  @@index([hashedKey])
+}
+
+model Product {
+  id              String    @id @default(cuid())
+  shopId          String
+  name            String
+  description     String?
+  price           Float
+  category        String?
+  digitalFileUrl  String?
+  fileSize        Int?
+  fileName        String?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  shop            Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  purchases       Purchase[]
+  
+  @@index([shopId])
+  @@index([category])
+}
+
+model Customer {
+  id          String    @id @default(cuid())
+  shopId      String
+  email       String
+  name        String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  shop        Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  purchases   Purchase[]
+  tickets     Ticket[]
+  
+  @@unique([shopId, email])
+  @@index([shopId])
+  @@index([email])
+}
+
+model Purchase {
+  id            String    @id @default(cuid())
+  customerId    String
+  productId     String
+  shopId        String
+  pricePaid     Float
+  downloadUrl   String?
+  downloadKey   String?
+  status        String    @default("completed")
+  createdAt     DateTime  @default(now())
+  
+  customer      Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  shop          Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  
+  @@index([customerId])
+  @@index([productId])
+  @@index([shopId])
+  @@index([status])
+}
+
+model Ticket {
+  id          String    @id @default(cuid())
+  shopId      String
+  customerId  String
+  subject     String
+  message     String
+  status      String    @default("open")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  shop        Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  customer    Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  replies     TicketReply[]
+  
+  @@index([shopId])
+  @@index([customerId])
+  @@index([status])
+}
+
+model TicketReply {
+  id          String    @id @default(cuid())
+  ticketId    String
+  message     String
+  isFromOwner Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  
+  ticket      Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  
+  @@index([ticketId])
+}
+
+model AnalyticsEvent {
+  id          String    @id @default(cuid())
+  shopId      String
+  type        String
+  metadata    String    @default("{}")
+  createdAt   DateTime  @default(now())
+  
+  shop        Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  
+  @@index([shopId])
+  @@index([type])
+  @@index([createdAt])
+}
